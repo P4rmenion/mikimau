@@ -37,3 +37,19 @@ export type MovieFilters = {
   fromYear: number | null;
   toYear: number | null;
 };
+
+export type Profile = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  wallet: number;
+};
+
+export type Rental = {
+  uuid: string;
+  movie: string;
+  rental_date: number;
+  return_date: number;
+  is_paid: boolean;
+  user: number;
+};

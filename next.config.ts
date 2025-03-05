@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
     ENDPOINT_REFRESH: '/auth/refresh/',
     ENDPOINT_MOVIES: '/rent-store/movies/',
     ENDPOINT_CATEGORIES: '/rent-store/categories',
+    ENDPOINT_PROFILE: '/rent-store/profile/',
+    ENDPOINT_RENTALS: '/rent-store/rentals/',
   },
   images: {
     remotePatterns: [

@@ -1,9 +1,8 @@
 import { Movie } from '@lib/definitions';
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { orbitron, montserrat } from '@(pages)/layout';
-import { useState } from 'react';
+import ImageWithFallback from '@components/ImageFallback';
 
 const MovieCard = ({
   uuid,
@@ -11,11 +10,8 @@ const MovieCard = ({
   pub_date,
   duration,
   rating,
-  description,
   poster_url,
 }: Movie) => {
-  const [imageFallback, setImageFallback] = useState(poster_url);
-
   return (
     <Link
       href={`/store/movies/${uuid}`}
@@ -24,12 +20,12 @@ const MovieCard = ({
       <div className="relative flex h-[360px] w-[250px] flex-col items-center gap-2">
         <div className="absolute">
           <div className="absolute bottom-0 h-[360px] w-[250px] bg-linear-[180deg,transparent_30%,black_85%]"></div>
-          <Image
-            src={imageFallback ? imageFallback : '/no-poster.jpg'}
+          <ImageWithFallback
+            fallback="/no-poster.jpg"
+            src={poster_url ? poster_url : '/no-poster.jpg'}
             alt={title}
             width={250}
             height={360}
-            onError={() => setImageFallback('/no-poster.jpg')}
           />
         </div>
         <div className="z-10 mt-auto flex w-full flex-col items-start gap-5 px-5 py-3">

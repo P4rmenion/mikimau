@@ -35,7 +35,7 @@ export default function LoginForm() {
         Welcome to
         <span className={`${orbitron.className} text-primary text-4xl`}>
           MIKIMAU
-        </span>{' '}
+        </span>
       </h1>
       <form
         noValidate

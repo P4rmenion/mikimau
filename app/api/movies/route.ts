@@ -4,8 +4,6 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const params = url.searchParams;
 
-  console.log('PARAMS: ', params);
-
   const res = await fetch(
     `${process.env.HOST}${process.env.ENDPOINT_MOVIES}?${params?.toString()}`,
     {
@@ -18,7 +16,7 @@ export async function GET(req: Request) {
   );
 
   if (!res.ok) {
-    return NextResponse.json({ error: res.statusText }, { status: 500 });
+    return NextResponse.json({ error: res.statusText }, { status: res.status });
   }
 
   const data = await res.json();

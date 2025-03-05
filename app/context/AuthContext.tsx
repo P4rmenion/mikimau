@@ -2,6 +2,7 @@
 
 import { refreshAccess } from '@actions/auth';
 import { isJWTExpired } from '@lib/utils';
+import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useState, useEffect } from 'react';
 
@@ -21,12 +22,20 @@ const AuthContext = createContext<AuthContextType | null>(null);
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   // Load token from localStorage when the app starts.
   useEffect(() => {
     const storedToken = localStorage.getItem('access');
-    if (storedToken) setAccessToken(storedToken);
+
+    if (storedToken) {
+      setAccessToken(storedToken);
+      const { is_admin }: { is_admin: boolean } = jwtDecode(storedToken);
+      setIsAdmin(is_admin);
+    } else {
+      setAccessToken(null);
+    }
   }, []);
 
   // Update localStorage in case the token changes.
@@ -38,18 +47,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Refresh token if it's expired
   useEffect(() => {
     const fetchAccessToken = async () => {
-      await refreshAccess()
-        .then((token) => {
-          setAccessToken(token);
-        })
-        .catch(() => {
-          setAccessToken(null);
-        });
-
-      if (!accessToken) router.push('/login');
+      try {
+        const newToken = await refreshAccess();
+        setAccessToken(newToken);
+        localStorage.setItem('access', newToken);
+      } catch (error) {
+        console.error('Failed to refresh token:', error);
+        router.push('/login');
+      }
     };
 
-    if (!accessToken || isJWTExpired(accessToken)) fetchAccessToken();
+    setInterval(() => {
+      if (accessToken && isJWTExpired(accessToken)) fetchAccessToken();
+    }, 10000);
   }, [accessToken, router]);
 
   return (

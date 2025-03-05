@@ -1,7 +1,7 @@
 'use client';
 
 import MovieCard from '@components/MovieCard';
-import SkeletonCard from '@components/SkeletonCard';
+import SkeletonCard from '@components/Skeletons/SkeletonCard';
 import Image from 'next/image';
 
 import { useAuth } from '@context/AuthContext';
@@ -18,6 +18,7 @@ import {
 } from '@components/shadcn/select';
 
 export default function MoviesPage() {
+  // References to control the filters DOM state (resetting)
   const categoriesRef = useRef<HTMLDivElement>(null);
   const categoriesFilterRef = useRef<HTMLButtonElement>(null);
 
@@ -27,6 +28,7 @@ export default function MoviesPage() {
   const yearRef = useRef<HTMLDivElement>(null);
   const yearFilterRef = useRef<HTMLButtonElement>(null);
 
+  // Filters State
   const [filters, setFilters] = useState<MovieFilters>({
     categories: [],
     fromRating: null,
@@ -35,26 +37,53 @@ export default function MoviesPage() {
     toYear: null,
   });
 
+  // Filters DOM state
   const [filtersOpen, setFiltersOpen] = useState({
     categories: false,
     rating: false,
     year: false,
   });
 
+  // Authentication
   const { accessToken } = useAuth();
+
+  // Data API
   const [movies, setMovies] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+
   const [queryParams, setQueryParams] = useState(new URLSearchParams());
+
+  const resetCategories = () => {
+    const inputs = categoriesRef.current?.querySelectorAll('input');
+    inputs?.forEach((input) => (input.checked = false));
+    setFilters({ ...filters, categories: [] });
+  };
+
+  const resetRating = () => {
+    if (!filters.fromRating && !filters.toRating) return;
+    setFilters({ ...filters, fromRating: null, toRating: null });
+  };
+
+  const resetYear = () => {
+    if (!filters.fromYear && !filters.toYear) return;
+    setFilters({ ...filters, fromYear: null, toYear: null });
+  };
 
   // Redirect if no access token
   useEffect(() => {
     if (!accessToken) redirect('/login');
   }, [accessToken]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   // Update query params
   useEffect(() => {
@@ -88,11 +117,8 @@ export default function MoviesPage() {
     ];
 
     for (const { key, value } of filterParams) {
-      if (value) {
-        query.set(key, value);
-      } else {
-        query.delete(key);
-      }
+      if (value) query.set(key, value);
+      else query.delete(key);
     }
 
     setQueryParams(query);
@@ -114,7 +140,10 @@ export default function MoviesPage() {
         setTotalPages(data.count > 0 ? Math.ceil(data.count / pageSize) : 1);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        setMovies([]);
+      });
   }, [accessToken, pageSize, page, queryParams, filters]);
 
   // Fetch Categories
@@ -133,7 +162,10 @@ export default function MoviesPage() {
         setCategories(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        setCategories([]);
+      });
   }, [accessToken]);
 
   return (
@@ -195,16 +227,16 @@ export default function MoviesPage() {
         </div>
 
         <div
-          className={`${!filtersOpen.categories && !filtersOpen.rating && !filtersOpen.year ? 'hidden' : 'flex'} w-full flex-col items-center gap-10 text-center`}
+          className={`${!filtersOpen.categories && !filtersOpen.rating && !filtersOpen.year ? 'hidden' : 'flex'} items-center justify-evenly text-center 2xl:w-4/5`}
         >
           <div
             ref={categoriesRef}
-            className={`${filtersOpen.categories ? 'flex' : 'hidden'} flex-col items-center gap-4`}
+            className={`${filtersOpen.categories ? 'flex' : 'hidden'} flex-1 flex-col items-center gap-4`}
           >
             <h3 className="bg-secondary-300 text-md rounded-full px-4 py-1 font-semibold uppercase">
               GENRES
             </h3>
-            <div className="flex w-3/4 flex-wrap items-center justify-center gap-x-3 gap-y-5 rounded-2xl px-2 py-4 text-sm">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-6 rounded-2xl p-4 text-sm">
               {categories.length > 0 &&
                 categories?.map((category: Category, index) => (
                   <div key={index} className="relative">
@@ -234,13 +266,8 @@ export default function MoviesPage() {
                   </div>
                 ))}
               <button
-                onClick={() => {
-                  const inputs =
-                    categoriesRef.current?.querySelectorAll('input');
-                  inputs?.forEach((input) => (input.checked = false));
-                  setFilters({ ...filters, categories: [] });
-                }}
-                className="border-primary text-primary cursor-pointer rounded-full border-2 bg-transparent px-4 py-1 font-semibold"
+                onClick={resetCategories}
+                className="reset-button border-primary text-primary cursor-pointer rounded-full border-2 bg-transparent px-4 py-1 font-semibold"
               >
                 Reset
               </button>
@@ -248,16 +275,16 @@ export default function MoviesPage() {
           </div>
 
           <div
-            className={`${!filtersOpen.rating && !filtersOpen.year ? 'hidden' : 'flex'} bg-secondary-400 items-center justify-between gap-40 rounded-3xl px-16 py-10`}
+            className={`${!filtersOpen.rating && !filtersOpen.year ? 'hidden' : 'flex flex-col'} items-center justify-between gap-10 rounded-3xl px-16 py-10`}
           >
             <div
               ref={ratingRef}
-              className={`${filtersOpen.rating ? 'flex' : 'hidden'} flex-col items-center justify-center gap-6`}
+              className={`${filtersOpen.rating ? 'flex' : 'hidden'} w-full items-center justify-between gap-6`}
             >
-              <h2 className="bg-secondary-300 text-md rounded-full px-4 py-1 font-semibold uppercase">
+              <h2 className="bg-secondary-300 text-md mr-auto rounded-full px-4 py-1 font-semibold uppercase">
                 Rating
               </h2>
-              <div className="flex items-center gap-6">
+              <div className="ml-auto flex items-center gap-6">
                 <div className="flex items-center gap-4">
                   <h3 className="text-sm font-semibold">From</h3>
                   <Select
@@ -266,10 +293,10 @@ export default function MoviesPage() {
                       setFilters({ ...filters, fromRating: Number(value) })
                     }
                   >
-                    <SelectTrigger className="border-primary bg-secondary">
+                    <SelectTrigger className="bg-secondary">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-secondary border-primary min-w-0">
+                    <SelectContent className="bg-secondary min-w-0">
                       {Array(10)
                         .fill(null)
                         .map((_, index) => (
@@ -284,19 +311,19 @@ export default function MoviesPage() {
                   </Select>
                 </div>
 
-                {filters?.fromRating && filters.fromRating < 10 && (
+                {filters.fromRating !== null && filters.fromRating < 10 && (
                   <div className="flex items-center gap-4">
                     <h3 className="text-sm font-semibold">To</h3>
                     <Select
-                      value={filters?.toRating?.toString() || ''}
+                      value={filters.toRating?.toString() || ''}
                       onValueChange={(value) =>
                         setFilters({ ...filters, toRating: Number(value) })
                       }
                     >
-                      <SelectTrigger className="border-primary bg-secondary">
+                      <SelectTrigger className="bg-secondary">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-secondary border-primary min-w-0">
+                      <SelectContent className="bg-secondary min-w-0">
                         {Array(10 - filters.fromRating + 1)
                           .fill(null)
                           .map((_, index) => (
@@ -307,9 +334,7 @@ export default function MoviesPage() {
                                 : index + 1
                               ).toString()}
                             >
-                              {filters?.fromRating
-                                ? filters.fromRating + index
-                                : index + 1}
+                              {(filters.fromRating as number) + index}
                             </SelectItem>
                           ))}
                       </SelectContent>
@@ -318,11 +343,8 @@ export default function MoviesPage() {
                 )}
               </div>
               <button
-                onClick={() => {
-                  if (!filters.fromRating && !filters.toRating) return;
-                  setFilters({ ...filters, fromRating: null, toRating: null });
-                }}
-                className="border-primary text-primary cursor-pointer rounded-full border-2 bg-transparent px-4 py-1 text-sm font-semibold"
+                onClick={resetRating}
+                className="reset-button border-primary text-primary cursor-pointer rounded-full border-2 bg-transparent px-4 py-1 text-sm font-semibold"
               >
                 Reset
               </button>
@@ -330,12 +352,12 @@ export default function MoviesPage() {
 
             <div
               ref={yearRef}
-              className={`${filtersOpen.year ? 'flex' : 'hidden'} flex-col items-center justify-center gap-6`}
+              className={`${filtersOpen.year ? 'flex' : 'hidden'} w-full items-center justify-between gap-6`}
             >
               <h2 className="bg-secondary-300 text-md rounded-full px-4 py-1 font-semibold uppercase">
                 Year
               </h2>
-              <div className="flex items-center gap-6">
+              <div className="ml-auto flex items-center gap-6">
                 <div className="flex items-center gap-4">
                   <h3 className="text-sm font-semibold">From</h3>
                   <Select
@@ -347,10 +369,10 @@ export default function MoviesPage() {
                       filters?.fromYear ? filters.fromYear.toString() : '0'
                     }
                   >
-                    <SelectTrigger className="border-primary bg-secondary">
+                    <SelectTrigger className="bg-secondary">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-secondary border-primary min-w-0">
+                    <SelectContent className="bg-secondary min-w-0">
                       {Array(100)
                         .fill(null)
                         .map((_, index) => (
@@ -380,10 +402,10 @@ export default function MoviesPage() {
                           setFilters({ ...filters, toYear: Number(value) })
                         }
                       >
-                        <SelectTrigger className="border-primary bg-secondary">
+                        <SelectTrigger className="bg-secondary">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-secondary border-primary min-w-0">
+                        <SelectContent className="bg-secondary min-w-0">
                           {Array(
                             new Date().getFullYear() - filters.fromYear + 1,
                           )
@@ -407,11 +429,8 @@ export default function MoviesPage() {
                   )}
               </div>
               <button
-                onClick={() => {
-                  if (!filters.fromYear && !filters.toYear) return;
-                  setFilters({ ...filters, fromYear: null, toYear: null });
-                }}
-                className="border-primary text-primary cursor-pointer rounded-full border-2 bg-transparent px-4 py-1 text-sm font-semibold"
+                onClick={resetYear}
+                className="reset-button border-primary text-primary cursor-pointer rounded-full border-2 bg-transparent px-4 py-1 text-sm font-semibold"
               >
                 Reset
               </button>
@@ -425,14 +444,17 @@ export default function MoviesPage() {
           Array(pageSize)
             .fill(null)
             .map((_, index) => <SkeletonCard key={index} />)
-        ) : movies.length > 0 ? (
+        ) : movies && movies.length > 0 ? (
           movies?.map((movie: Movie) => (
             <MovieCard key={movie.uuid} {...movie} />
           ))
         ) : (
-          <h2 className="bg-primary-100 w-3/4 rounded-xl px-8 py-10 text-center text-lg font-semibold">
-            No movies matching your selected criteria were found in our
-            database. You must have.. a weird taste.
+          <h2 className="bg-primary-100 outline-primary-100 text-md flex w-3/4 flex-col gap-4 rounded-full px-20 py-6 text-center font-semibold outline-2 outline-offset-4">
+            There are no movies matching your selected criteria.
+            <br />
+            <span>
+              You must have.. <i>an oddly specific taste</i>.
+            </span>
           </h2>
         )}
       </div>
@@ -456,7 +478,7 @@ export default function MoviesPage() {
           <button
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
-            className="border-primary flex cursor-pointer items-center justify-center rounded-full border-1 bg-transparent p-1 text-black shadow-lg shadow-black disabled:bg-gray-500 disabled:text-gray-400"
+            className="border-primary flex cursor-pointer items-center justify-center rounded-full border-1 bg-transparent p-1 text-black shadow-lg shadow-black disabled:border-gray-500 disabled:bg-gray-500 disabled:text-gray-400"
           >
             <Image
               src="/left-chevron.svg"

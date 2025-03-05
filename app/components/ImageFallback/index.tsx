@@ -2,21 +2,21 @@ import React, { useState } from 'react';
 import Image, { ImageProps } from 'next/image';
 
 interface ImageWithFallbackProps extends ImageProps {
-  fallbackSrc: string;
+  fallback: string;
 }
 
 const ImageWithFallback = (props: ImageWithFallbackProps) => {
-  const { src, fallbackSrc, ...rest } = props;
-  const [imgSrc, setImgSrc] = useState(src);
+  const { src, fallback, alt, ...rest } = props;
+  const [imageSource, setImageSource] = useState(src);
 
   return (
     <Image
       {...rest}
-      src={imgSrc}
+      alt={alt}
+      src={imageSource}
       onError={() => {
-        setImgSrc(fallbackSrc);
+        setImageSource(fallback);
       }}
-      alt="Fallback image in case the original image fails to load"
     />
   );
 };
