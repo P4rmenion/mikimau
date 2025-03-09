@@ -5,7 +5,9 @@
 ## Start the server
 
 ```bash
+cd mikimau
 npm install
+npm run build
 npm start
 ```
 
