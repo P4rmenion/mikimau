@@ -27,7 +27,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // Refresh the access token only if refresh token exists
-        const token = await refreshAccess();
+        const token = await refreshAccess().catch(() => {
+          setAccess(null);
+          setIsAdmin(false);
+          setLoading(false);
+          return;
+        });
+
         const adminStatus = await getAdminStatus(token);
 
         // Update cookies

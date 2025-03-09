@@ -301,27 +301,29 @@ export default function MoviesPage() {
               {categories.length > 0 &&
                 categories?.map((category: Category, index) => (
                   <div key={index} className="relative">
-                    <input
-                      name={category.name}
-                      type="checkbox"
-                      className="peer absolute z-10 h-full w-full opacity-0"
-                      onClick={(e) => {
-                        const category = e.target as HTMLInputElement;
-                        let categories = filters.categories;
-
-                        if (!category.checked)
-                          categories = categories.filter(
-                            (element) => element !== category.name,
-                          );
-                        else categories.push(category.name);
-
-                        setFilters({ ...filters, categories });
-                      }}
-                    />
                     <label
                       htmlFor={category.name}
-                      className="peer-checked:bg-primary rounded-full bg-gray-200 px-4 py-2 font-semibold text-black transition-all duration-300 ease-out peer-checked:text-white"
+                      className="has-checked:bg-primary rounded-full bg-gray-200 px-4 py-2 font-semibold text-black transition-all duration-300 ease-out has-checked:text-white"
                     >
+                      <input
+                        name={category.name}
+                        id={category.name}
+                        type="checkbox"
+                        className="absolute opacity-0"
+                        onClick={(e) => {
+                          const category = e.target as HTMLInputElement;
+                          let categories = filters.categories;
+
+                          if (!category.checked)
+                            categories = categories.filter(
+                              (element) => element !== category.name,
+                            );
+                          else categories.push(category.name);
+
+                          setFilters({ ...filters, categories });
+                        }}
+                      />
+
                       {category.name}
                     </label>
                   </div>

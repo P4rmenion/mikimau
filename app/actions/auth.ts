@@ -157,7 +157,10 @@ export async function safeFetch(url: string, options: RequestInit = {}) {
       console.warn('Access token expired. Attempting refresh...');
 
       try {
-        const access = await refreshAccess();
+        const access = await refreshAccess().catch(() => {
+          return { error: 'Unauthorized', status: 401 };
+        });
+
         await setAccessToken(access);
 
         // Retry the request with the new access token

@@ -38,7 +38,7 @@ export default function LoginForm() {
   }, [state, setAccess, setIsAdmin]);
 
   return (
-    <div className="bg-secondary flex min-h-full flex-col items-center gap-10 p-4 pt-[5dvh] lg:justify-center lg:p-0">
+    <div className="bg-secondary flex flex-col items-center justify-center gap-10 p-4 py-20">
       <h1 className="flex flex-col items-center gap-2 text-center text-2xl text-white">
         Welcome to
         <span className={`${orbitron.className} text-primary text-4xl`}>
