@@ -93,7 +93,11 @@ export default function MovieDetailsPage() {
         {movie ? (
           <>
             <h1 className="text-4xl font-bold">{movie.title}</h1>
-            <p className="text-gray-200">{movie.description}</p>
+            <p className="text-gray-200">
+              {movie.description
+                ? movie.description
+                : 'No description available. Maybe check IMDB?'}
+            </p>
 
             <div className="flex flex-col gap-2">
               <p className="flex items-center gap-2">

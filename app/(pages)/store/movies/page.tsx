@@ -302,12 +302,12 @@ export default function MoviesPage() {
                 categories?.map((category: Category, index) => (
                   <div key={index} className="relative">
                     <label
-                      htmlFor={category.name}
+                      htmlFor={category.name + '-filter'}
                       className="has-checked:bg-primary rounded-full bg-gray-200 px-4 py-2 font-semibold text-black transition-all duration-300 ease-out has-checked:text-white"
                     >
                       <input
                         name={category.name}
-                        id={category.name}
+                        id={category.name + '-filter'}
                         type="checkbox"
                         className="absolute opacity-0"
                         onClick={(e) => {
