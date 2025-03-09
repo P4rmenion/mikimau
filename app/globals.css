@@ -2,16 +2,13 @@
 @plugin 'tailwindcss-animate';
 @custom-variant dark (&:is(.dark *));
 
-html {
-  margin: 0px;
+html,
+body {
   height: 100%;
-  width: 100%;
 }
 
 body {
-  margin: 0px;
-  min-height: 100%;
-  width: 100%;
+  min-height: 100vh;
 }
 
 @theme {

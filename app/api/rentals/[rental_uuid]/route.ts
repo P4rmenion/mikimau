@@ -1,19 +1,18 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ uuid: string }> },
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ rental_uuid: string }> },
 ) {
-  const { uuid } = await params;
-  console.log(uuid);
+  const { rental_uuid } = await params;
 
   const res = await fetch(
-    `${process.env.HOST}${process.env.ENDPOINT_MOVIES}${uuid}`,
+    `${process.env.HOST}${process.env.ENDPOINT_RENTALS}${rental_uuid}`,
     {
-      method: 'GET',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: request.headers.get('Authorization')?.toString() || '',
+        Authorization: req.headers.get('Authorization')?.toString() || '',
       },
     },
   );

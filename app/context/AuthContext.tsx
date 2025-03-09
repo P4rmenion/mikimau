@@ -1,70 +1,58 @@
 'use client';
 
-import { refreshAccess } from '@actions/auth';
-import { isJWTExpired } from '@lib/utils';
-import { jwtDecode } from 'jwt-decode';
-import { useRouter } from 'next/navigation';
-import { createContext, useContext, useState, useEffect } from 'react';
-
-interface AuthContextType {
-  accessToken: string | null;
-  setAccessToken: (token: string | null) => void;
-}
+import { createContext, useState, useEffect, useContext } from 'react';
+import { refreshAccess, getAdminStatus, setAccessToken } from '@actions/auth';
+import { AuthContextType } from '@lib/definitions';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-/**
- * Provides authentication context to its children components.
- * Initializes and manages the access token state, loading it from localStorage on startup.
- *
- * @param {Object} props - Component props.
- * @param {React.ReactNode} props.children - Child components that will have access to the AuthContext.
- */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const router = useRouter();
+  const [access, setAccess] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Load token from localStorage when the app starts.
   useEffect(() => {
-    const storedToken = localStorage.getItem('access');
-
-    if (storedToken) {
-      setAccessToken(storedToken);
-      const { is_admin }: { is_admin: boolean } = jwtDecode(storedToken);
-      setIsAdmin(is_admin);
-    } else {
-      setAccessToken(null);
+    async function checkAdminStatus() {
+      const adminStatus = await getAdminStatus(access);
+      setIsAdmin(adminStatus);
     }
+
+    checkAdminStatus();
+  }, [access]);
+
+  // Refresh token every 10 minutes
+  useEffect(() => {
+    async function refreshAuth() {
+      setLoading(true);
+
+      try {
+        // Refresh the access token only if refresh token exists
+        const token = await refreshAccess();
+        const adminStatus = await getAdminStatus(token);
+
+        // Update cookies
+        await setAccessToken(token);
+
+        // Update state
+        setAccess(token);
+        setIsAdmin(adminStatus);
+        setLoading(false);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_) {
+        setAccess(null);
+        setIsAdmin(false);
+        setLoading(false);
+      }
+    }
+
+    refreshAuth();
+    const interval = setInterval(refreshAuth, 10 * 60 * 1000); // Refresh every 10 min
+    return () => clearInterval(interval);
   }, []);
 
-  // Update localStorage in case the token changes.
-  useEffect(() => {
-    if (accessToken) localStorage.setItem('access', accessToken);
-    else localStorage.removeItem('access');
-  }, [accessToken]);
-
-  // Refresh token if it's expired
-  useEffect(() => {
-    const fetchAccessToken = async () => {
-      try {
-        const newToken = await refreshAccess();
-        setAccessToken(newToken);
-        localStorage.setItem('access', newToken);
-      } catch (error) {
-        console.error('Failed to refresh token:', error);
-        router.push('/login');
-      }
-    };
-
-    setInterval(() => {
-      if (accessToken && isJWTExpired(accessToken)) fetchAccessToken();
-    }, 10000);
-  }, [accessToken, router]);
-
   return (
-    <AuthContext.Provider value={{ accessToken, setAccessToken }}>
-      {children}
+    <AuthContext.Provider value={{ access, setAccess, isAdmin, setIsAdmin }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 }

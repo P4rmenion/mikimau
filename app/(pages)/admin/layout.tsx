@@ -2,7 +2,7 @@ import Header from '@components/Header';
 
 import '../../globals.css';
 
-export default function StoreLayout({
+export default function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

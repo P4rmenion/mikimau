@@ -29,6 +29,9 @@
       "@root": [
         "./app/(pages)/layout.tsx"
       ],
+      "@testing-library/*": [
+        "./node_modules/@testing-library/*"
+      ]
     }
   },
   "include": [

@@ -15,7 +15,7 @@ const MovieCard = ({
   return (
     <Link
       href={`/store/movies/${uuid}`}
-      className="border-primary overflow-clip rounded-lg border-2 bg-black shadow-lg shadow-black transition-transform duration-400 ease-in-out hover:scale-105"
+      className="overflow-clip rounded-lg border-2 border-gray-300 bg-black shadow-lg shadow-black transition-transform duration-400 ease-in-out hover:scale-105"
     >
       <div className="relative flex h-[360px] w-[250px] flex-col items-center gap-2">
         <div className="absolute">
@@ -26,22 +26,28 @@ const MovieCard = ({
             alt={title}
             width={250}
             height={360}
+            priority
+            unoptimized
+            id="poster"
           />
         </div>
         <div className="z-10 mt-auto flex w-full flex-col items-start gap-5 px-5 py-3">
           <div className="text-md w-full text-center">
-            <span className={`font-bold ${orbitron.className}`}>{title} </span>
+            <span id="title" className={`font-bold ${orbitron.className}`}>
+              {title}
+            </span>
           </div>
           <div className="text-md relative flex w-full justify-between">
-            <span className="font-semibold text-yellow-600">
+            <span id="rating" className="font-semibold text-yellow-600">
               {rating ? rating : 'N/A'}
             </span>
             <span
+              id="pub_date"
               className={`${montserrat.className} absolute left-1/2 -translate-x-1/2 font-medium`}
             >
               {pub_date ? pub_date : 'N/A'}
             </span>
-            <span>{duration ? `${duration}''` : 'N/A'}</span>
+            <span id="duration">{duration ? `${duration}''` : 'N/A'}</span>
           </div>
         </div>
       </div>

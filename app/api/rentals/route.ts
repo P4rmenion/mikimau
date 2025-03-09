@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const params = url.searchParams;
+
   const res = await fetch(
-    `${process.env.HOST}${process.env.ENDPOINT_RENTALS}`,
+    `${process.env.HOST}${process.env.ENDPOINT_RENTALS}?${params?.toString()}`,
     {
       method: 'GET',
       headers: {
@@ -22,7 +25,6 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const payload = await req.json();
-  console.log(JSON.stringify(payload));
 
   const res = await fetch(
     `${process.env.HOST}${process.env.ENDPOINT_RENTALS}`,
@@ -35,8 +37,6 @@ export async function POST(req: Request) {
       body: JSON.stringify(payload),
     },
   );
-
-  console.log(res);
 
   if (!res.ok) {
     return NextResponse.json({ error: res.statusText }, { status: res.status });

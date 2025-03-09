@@ -1,10 +1,12 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
-import { login } from '@actions/auth';
+
 import { redirect } from 'next/navigation';
-import { useAuth } from '@context/AuthContext';
 import { orbitron } from '@root';
+
+import { useAuth } from '@context/AuthContext';
+import { getAdminStatus, login } from '@actions/auth';
 
 export default function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined);
@@ -13,7 +15,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const { setAccessToken } = useAuth();
+  const { setAccess, setIsAdmin } = useAuth();
 
   // Reset error message
   useEffect(() => {
@@ -23,14 +25,20 @@ export default function LoginForm() {
 
   // Store access token in state (app context)
   useEffect(() => {
+    async function checkAdminStatus() {
+      const adminStatus = await getAdminStatus(state?.access || null);
+      setIsAdmin(adminStatus);
+    }
+
     if (state?.access) {
-      setAccessToken(state.access);
+      setAccess(state.access);
+      checkAdminStatus();
       redirect('/store/movies');
     }
-  }, [state, setAccessToken]);
+  }, [state, setAccess, setIsAdmin]);
 
   return (
-    <div className="bg-secondary flex h-full flex-col items-center gap-10 p-4 pt-[5dvh] lg:justify-center lg:p-0">
+    <div className="bg-secondary flex min-h-full flex-col items-center gap-10 p-4 pt-[5dvh] lg:justify-center lg:p-0">
       <h1 className="flex flex-col items-center gap-2 text-center text-2xl text-white">
         Welcome to
         <span className={`${orbitron.className} text-primary text-4xl`}>
@@ -59,6 +67,7 @@ export default function LoginForm() {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            required
           />
           {state?.errors?.username && (
             <span className="px-2 pt-1 text-xs text-red-500">
@@ -81,6 +90,7 @@ export default function LoginForm() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
           {state?.errors?.password && (
             <span className="px-2 pt-1 text-xs text-red-500">
@@ -89,7 +99,7 @@ export default function LoginForm() {
           )}
         </div>
         {error && (
-          <div className="rounded-xl bg-red-400 px-4 py-4 text-center text-xs text-white outline-2 outline-offset-2 outline-red-500 lg:max-w-[300px] lg:text-sm">
+          <div className="w-full rounded-full bg-red-400 px-4 py-4 text-center text-xs text-white lg:max-w-[300px] lg:text-base">
             <span>{error}</span>
           </div>
         )}

@@ -1,14 +1,16 @@
 'use client';
 
-import MovieCard from '@components/MovieCard';
-import SkeletonCard from '@components/Skeletons/SkeletonCard';
-import Image from 'next/image';
-
 import { useAuth } from '@context/AuthContext';
 import { Category, Movie, MovieFilters } from '@lib/definitions';
 
-import { redirect } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+
+import Pagination from '@components/Pagination';
+import AddMovieForm from '@components/AddMovieForm';
+
+import MovieCard from '@components/MovieCard';
+import SkeletonCard from '@components/Skeletons/SkeletonCard';
+
 import {
   Select,
   SelectContent,
@@ -17,7 +19,25 @@ import {
   SelectValue,
 } from '@components/shadcn/select';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@components/shadcn/alert-dialog';
+
+import { logout } from '@actions/auth';
+import { fetchCategories, fetchMovies } from '@lib/api';
+
+import { useRouter } from 'next/navigation';
+
 export default function MoviesPage() {
+  const router = useRouter();
+
   // References to control the filters DOM state (resetting)
   const categoriesRef = useRef<HTMLDivElement>(null);
   const categoriesFilterRef = useRef<HTMLButtonElement>(null);
@@ -27,6 +47,8 @@ export default function MoviesPage() {
 
   const yearRef = useRef<HTMLDivElement>(null);
   const yearFilterRef = useRef<HTMLButtonElement>(null);
+
+  const feedbackRef = useRef<HTMLButtonElement>(null);
 
   // Filters State
   const [filters, setFilters] = useState<MovieFilters>({
@@ -38,47 +60,77 @@ export default function MoviesPage() {
   });
 
   // Filters DOM state
-  const [filtersOpen, setFiltersOpen] = useState({
+  const [filtersOpen, setFiltersOpen] = useState<{
+    categories: boolean;
+    rating: boolean;
+    year: boolean;
+  }>({
     categories: false,
     rating: false,
     year: false,
   });
 
   // Authentication
-  const { accessToken } = useAuth();
+  const { access, setAccess, isAdmin } = useAuth();
 
   // Data API
-  const [movies, setMovies] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Pagination
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [page, setPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(5);
 
   const [queryParams, setQueryParams] = useState(new URLSearchParams());
+
+  // Admin addMovie feedback
+  const [feedback, setFeedback] = useState<string>('');
+
+  useEffect(() => {
+    if (feedback) feedbackRef.current?.click();
+  }, [feedback]);
 
   const resetCategories = () => {
     const inputs = categoriesRef.current?.querySelectorAll('input');
     inputs?.forEach((input) => (input.checked = false));
-    setFilters({ ...filters, categories: [] });
+    setFilters((prevState) => {
+      return { ...prevState, categories: [] };
+    });
   };
 
   const resetRating = () => {
     if (!filters.fromRating && !filters.toRating) return;
-    setFilters({ ...filters, fromRating: null, toRating: null });
+    setFilters((prevState) => {
+      return { ...prevState, fromRating: null, toRating: null };
+    });
   };
 
   const resetYear = () => {
     if (!filters.fromYear && !filters.toYear) return;
-    setFilters({ ...filters, fromYear: null, toYear: null });
+    setFilters((prevState) => {
+      return { ...prevState, fromYear: null, toYear: null };
+    });
   };
 
-  // Redirect if no access token
-  useEffect(() => {
-    if (!accessToken) redirect('/login');
-  }, [accessToken]);
+  const clearFilters = () => {
+    resetCategories();
+    resetRating();
+    resetYear();
+
+    [categoriesFilterRef, ratingFilterRef, yearFilterRef].forEach(
+      (ref) => (
+        ref.current?.classList.remove('bg-primary'),
+        ref.current?.classList.add('bg-transparent')
+      ),
+      setFiltersOpen({
+        categories: false,
+        rating: false,
+        year: false,
+      }),
+    );
+  };
 
   // Reset page when filters change
   useEffect(() => {
@@ -126,50 +178,49 @@ export default function MoviesPage() {
 
   // Fetch movies
   useEffect(() => {
-    setLoading(true);
-    fetch(`${process.env.DOMAIN}/api/movies?${queryParams}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
+    async function loadMovies() {
+      const data = await fetchMovies(access, queryParams);
+
+      if ('results' in data) {
         setMovies(data.results);
         setTotalPages(data.count > 0 ? Math.ceil(data.count / pageSize) : 1);
         setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-        setMovies([]);
-      });
-  }, [accessToken, pageSize, page, queryParams, filters]);
+      } else {
+        console.error(data.error);
+        if (data.status === 401) {
+          await logout();
+          router.refresh();
+        }
+      }
+    }
+
+    setLoading(true);
+    loadMovies();
+  }, [access, pageSize, page, queryParams, router, filters]);
 
   // Fetch Categories
   useEffect(() => {
-    setLoading(true);
+    async function loadCategories() {
+      const data = await fetchCategories(access);
 
-    fetch(`${process.env.DOMAIN}/api/categories`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
+      if ('error' in data) {
+        console.error(data.error);
+        if (data.status === 401) {
+          await logout();
+          router.refresh();
+        }
+      } else {
         setCategories(data);
         setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-        setCategories([]);
-      });
-  }, [accessToken]);
+      }
+    }
+
+    setLoading(true);
+    loadCategories();
+  }, [access, router, setAccess]);
 
   return (
-    <div className="flex h-fit min-h-screen flex-col items-center justify-evenly p-4 pt-[5dvh] lg:gap-20 lg:px-[10vw] lg:py-20">
+    <div className="flex h-full flex-col items-center justify-evenly p-4 pt-[5dvh] lg:gap-20 lg:px-[10vw] lg:py-20">
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-3xl font-semibold">Movies</h1>
         <h2 className="text-lg">
@@ -224,10 +275,20 @@ export default function MoviesPage() {
           >
             Year
           </button>
+          {(filtersOpen.year ||
+            filtersOpen.rating ||
+            filtersOpen.categories) && (
+            <button
+              onClick={clearFilters}
+              className="relative h-fit cursor-pointer rounded-full border-2 border-white bg-transparent px-4 py-2 font-bold text-white shadow-xl shadow-black transition-colors duration-200 ease-in-out"
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
 
         <div
-          className={`${!filtersOpen.categories && !filtersOpen.rating && !filtersOpen.year ? 'hidden' : 'flex'} items-center justify-evenly text-center 2xl:w-4/5`}
+          className={`${!filtersOpen.categories && !filtersOpen.rating && !filtersOpen.year ? 'hidden' : 'flex'} items-center justify-center text-center 2xl:w-4/5`}
         >
           <div
             ref={categoriesRef}
@@ -387,7 +448,8 @@ export default function MoviesPage() {
                           >
                             {new Date().getFullYear() - 100 + index + 1}
                           </SelectItem>
-                        ))}
+                        ))
+                        .reverse()}
                     </SelectContent>
                   </Select>
                 </div>
@@ -422,7 +484,8 @@ export default function MoviesPage() {
                                   ? filters.fromYear + index
                                   : index + 1}
                               </SelectItem>
-                            ))}
+                            ))
+                            .reverse()}
                         </SelectContent>
                       </Select>
                     </div>
@@ -449,66 +512,71 @@ export default function MoviesPage() {
             <MovieCard key={movie.uuid} {...movie} />
           ))
         ) : (
-          <h2 className="bg-primary-100 outline-primary-100 text-md flex w-3/4 flex-col gap-4 rounded-full px-20 py-6 text-center font-semibold outline-2 outline-offset-4">
-            There are no movies matching your selected criteria.
-            <br />
-            <span>
-              You must have.. <i>an oddly specific taste</i>.
-            </span>
-          </h2>
+          <div className="bg-primary-100 outline-primary-100 text-md flex w-full items-center justify-center gap-6 rounded-full px-10 py-6 text-center font-semibold outline-2 outline-offset-4">
+            <h2>There are no movies matching your selected criteria.</h2>
+            <button
+              onClick={clearFilters}
+              className="w-fit cursor-pointer rounded-full border-2 border-white px-4 py-2"
+            >
+              Clear filters
+            </button>
+          </div>
         )}
       </div>
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex items-center justify-center gap-6">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="border-primary flex cursor-pointer items-center justify-center rounded-full border-1 bg-transparent p-1 text-black shadow-lg shadow-black disabled:border-gray-500 disabled:bg-gray-500 disabled:text-gray-400"
-          >
-            <Image
-              src="/left-chevron.svg"
-              width={20}
-              height={20}
-              alt="left chevron"
-            />
-          </button>
-          <div className="flex gap-2">
-            <span>{page}</span> / <span>{totalPages}</span>
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        totalPages={totalPages}
+        setPage={setPage}
+        setPageSize={setPageSize}
+      />
+
+      {isAdmin && (
+        <>
+          <div className="fixed right-10 bottom-10 z-10">
+            <AlertDialog>
+              <AlertDialogTrigger className="border-primary bg-secondary mt-4 cursor-pointer rounded-full border-2 px-10 py-4 text-lg font-semibold text-white shadow-lg shadow-black">
+                Add Movie
+              </AlertDialogTrigger>
+              <AlertDialogContent className="border-primary bg-secondary max-h-[80vh] overflow-y-scroll border-2">
+                <AlertDialogHeader className="pt-10">
+                  <AlertDialogTitle className="text-center text-xl">
+                    Fill in the movie details
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="flex flex-col gap-4"></AlertDialogDescription>
+                </AlertDialogHeader>
+                <AddMovieForm
+                  categories={categories}
+                  setFeedback={setFeedback}
+                />
+                <AlertDialogFooter />
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-            className="border-primary flex cursor-pointer items-center justify-center rounded-full border-1 bg-transparent p-1 text-black shadow-lg shadow-black disabled:border-gray-500 disabled:bg-gray-500 disabled:text-gray-400"
-          >
-            <Image
-              src="/left-chevron.svg"
-              width={20}
-              height={20}
-              alt="right chevron"
-              className="rotate-180"
-            />
-          </button>
-        </div>
-        <div className="flex items-center gap-3 text-sm">
-          Per page:
-          <Select
-            onValueChange={(value) => {
-              setPageSize(Number(value));
-              setPage(1);
-            }}
-            defaultValue={pageSize.toString()}
-          >
-            <SelectTrigger className="border-primary w-fit shadow-lg shadow-black">
-              <SelectValue placeholder={pageSize} />
-            </SelectTrigger>
-            <SelectContent className="bg-secondary border-primary min-w-0">
-              <SelectItem value="5">5</SelectItem>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+
+          <AlertDialog>
+            <AlertDialogTrigger
+              ref={feedbackRef}
+              className="pointer-events-none invisible h-0 w-0"
+            >
+              Feedback
+            </AlertDialogTrigger>
+            <AlertDialogContent className="border-primary bg-secondary border-2">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="border-primary mb-10 w-full border-b-2 py-2 text-center">
+                  {feedback}
+                </AlertDialogTitle>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogAction className="border-primary border-2 bg-transparent transition-colors duration-200 ease-in-out">
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
     </div>
   );
 }
