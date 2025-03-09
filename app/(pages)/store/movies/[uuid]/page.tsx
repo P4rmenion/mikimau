@@ -190,7 +190,7 @@ export default function MovieDetailsPage() {
               <AlertDialogDescription>
                 Check out the movies at your disposal under{' '}
                 <Link
-                  href="/store/profile"
+                  href="/store/account"
                   className="text-primary font-semibold"
                 >
                   Rentals

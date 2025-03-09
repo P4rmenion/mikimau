@@ -22,6 +22,8 @@ export const sortRentals = ({
       // Sort alphabetically by movie title
       case 'TITLE':
         return a.movie.localeCompare(b.movie);
+      case 'USER':
+        return a.user.localeCompare(b.user);
       // Sort by date
       case 'RENTAL_DATE':
         return (
