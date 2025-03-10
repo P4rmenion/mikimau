@@ -98,7 +98,7 @@ export async function setRefreshToken(token: string) {
   const cookieStore = await cookies();
   cookieStore.set('refresh', token, {
     httpOnly: true,
-    secure: true,
+    secure: false,
     path: '/',
   });
 }
@@ -118,7 +118,7 @@ export async function setAccessToken(token: string) {
   const cookieStore = await cookies();
   cookieStore.set('access', token, {
     httpOnly: false, // Allow frontend to access it
-    secure: true,
+    secure: false,
     path: '/',
   });
 }
