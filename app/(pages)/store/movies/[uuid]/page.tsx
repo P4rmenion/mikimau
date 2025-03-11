@@ -75,7 +75,7 @@ export default function MovieDetailsPage() {
   };
 
   return (
-    <div className="flex h-full min-h-fit w-full items-start justify-start gap-40 px-[10vw] py-20">
+    <div className="flex h-full min-h-fit items-start justify-start gap-40 px-[10vw] py-20">
       {movie ? (
         <ImageWithFallback
           fallback="/no-poster.jpg"
@@ -83,7 +83,7 @@ export default function MovieDetailsPage() {
           alt={movie.title}
           width={500}
           height={720}
-          className="h-[70vh] min-h-[500px] rounded-lg border-2 border-gray-300 shadow-xl shadow-black"
+          className="h-[70vh] min-h-[500px] w-auto rounded-lg border-2 border-gray-300 shadow-xl shadow-black"
         />
       ) : (
         <SkeletonPoster />
