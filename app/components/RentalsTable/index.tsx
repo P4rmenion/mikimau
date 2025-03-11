@@ -115,7 +115,7 @@ const RentalsTable = ({
         </tr>
       </thead>
       <tbody>
-        {rentals &&
+        {rentals && rentals.length > 0 ? (
           sortRentals({ rentals, sortBy, order }).map((rental) => (
             <tr
               key={rental.uuid}
@@ -153,7 +153,14 @@ const RentalsTable = ({
                 </td>
               )}
             </tr>
-          ))}
+          ))
+        ) : (
+          <tr>
+            <div className="w-full text-center grid-">
+              There are no rentals to display
+            </div>
+          </tr>
+        )}
       </tbody>
     </table>
   );

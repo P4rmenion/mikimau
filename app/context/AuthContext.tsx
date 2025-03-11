@@ -1,8 +1,14 @@
 'use client';
 
 import { createContext, useState, useEffect, useContext } from 'react';
-import { refreshAccess, getAdminStatus, setAccessToken } from '@actions/auth';
+import {
+  refreshAccess,
+  getAdminStatus,
+  setAccessToken,
+  logout,
+} from '@actions/auth';
 import { AuthContextType } from '@lib/definitions';
+import { redirect } from 'next/navigation';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -27,11 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // Refresh the access token only if refresh token exists
-        const token = await refreshAccess().catch(() => {
+        const token = await refreshAccess().catch(async () => {
           setAccess(null);
           setIsAdmin(false);
           setLoading(false);
-          return;
+
+          logout();
         });
 
         const adminStatus = await getAdminStatus(token);
